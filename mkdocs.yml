@@ -1,16 +1,16 @@
-# Ruoyi-Scan 文档站配置（mkdocs-material）
+# RuoyiScanX 文档站配置（mkdocs-material）
 #
 # 本地预览：pip install mkdocs-material mkdocs-minify-plugin && mkdocs serve
 # 线上部署：push main → .github/workflows/docs-site.yml 自动构建并发布 GitHub Pages
 #
 # 约定：docs/ 下原有文档保持原名（外链 README 已引用），仅在 nav 中编组。
 
-site_name: Ruoyi-Scan
+site_name: RuoyiScanX
 site_description: 若依（RuoYi）专项漏洞扫描器 —— 插件化 / 三态判定 / 合规交付
 site_author: XIABAI
 site_url: https://xiabai2008.github.io/ruoyi-scan/
-repo_name: xiabai2008/Ruoyi-Scan
-repo_url: https://github.com/xiabai2008/Ruoyi-Scan
+repo_name: xiabai2008/RuoyiScanX
+repo_url: https://github.com/xiabai2008/RuoyiScanX
 edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2024-2026 XIABAI · MIT License
@@ -59,7 +59,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/xiabai2008/Ruoyi-Scan
+      link: https://github.com/xiabai2008/RuoyiScanX
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/ruoyi-scan/
   generator: false
