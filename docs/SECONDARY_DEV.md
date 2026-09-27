@@ -1,13 +1,21 @@
 # 二次开发指南
 
-> 本文档面向在 Ruoyi-Scan 基础上进行二次开发的开发者。在动手之前，请确保你已阅读
+> 本文档面向在 RuoyiScanX 基础上进行二次开发的开发者。在动手之前，请确保你已阅读
 > [贡献指南](CONTRIBUTING.md)，熟悉项目代码规范与开发流程。
+
+### 🙏 项目来源
+
+> **RuoyiScanX 基于 [Ruoyi-Scan](https://github.com/xiabai2008/Ruoyi-Scan)（作者：XIABAI）进行二次开发。**
+>
+> 原项目首创了三态判定系统、插件化架构、WAF 绕过策略矩阵等核心能力，为若依生态的安全审计树立了标杆。
+> 本项目在原项目 MIT License 授权范围内继承其优秀的安全检测能力，并进行功能扩展与工程化改进。
+> 向原作者 XIABAI 致敬，感谢你的开源贡献为社区带来的价值。
 
 ---
 
 ## 一、授权声明
 
-Ruoyi-Scan 采用 **MIT License** 开源，允许自由使用、修改、分发和商业化，但请遵守以下原则：
+RuoyiScanX 采用 **MIT License** 开源，允许自由使用、修改、分发和商业化，但请遵守以下原则：
 
 | 允许 | 不允许 |
 |------|--------|
@@ -23,7 +31,7 @@ Ruoyi-Scan 采用 **MIT License** 开源，允许自由使用、修改、分发�
 ## 二、项目架构总览
 
 ```
-Ruoyi-Scan/
+RuoyiScanX/
 ├── main.py                  # CLI 入口（~440 行，纯参数解析+分发）
 ├── config/settings.py       # 全局配置（版本号、路径常量等）
 ├── core/                    # 核心引擎层
@@ -71,8 +79,8 @@ Ruoyi-Scan/
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/<your-username>/Ruoyi-Scan.git
-cd Ruoyi-Scan
+git clone https://github.com/ZapcoMan/RuoyiScanX.git
+cd RuoyiScanX
 
 # 2. 创建虚拟环境
 python -m venv .venv
@@ -95,7 +103,7 @@ ruff format --check core/ lib/ api/ plugins/ chains/ main.py
 
 ## 四、核心概念：三态判定系统
 
-Ruoyi-Scan 的核心区别点，所有插件必须严格遵守：
+RuoyiScanX 的核心区别点，所有插件必须严格遵守：
 
 ```
 STATUS_CONFIRMED   ← 漏洞确实存在（有明确证据链）
@@ -239,7 +247,7 @@ pip install dist/ruoyi_scan-*.whl --force-reinstall
 
 关键实现点（`desktop/` 目录）：
 - 引擎编译期嵌入壳二进制
-- 运行时自解压到 `%LOCALAPPDATA%\Ruoyi-Scan\engine\`
+- 运行时自解压到 `%LOCALAPPDATA%\RuoyiScanX\engine\`
 - 子进程挂 Windows JobObject，壳崩溃时引擎树自动回收
 - NSIS 安装包含卸载清理钩子
 

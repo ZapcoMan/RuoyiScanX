@@ -1,6 +1,6 @@
 # 插件模板仓库规范（E5）
 
-Ruoyi-Scan 的插件分发遵循「模板仓库」模式（参照 nuclei-templates），
+RuoyiScanX 的插件分发遵循「模板仓库」模式（参照 nuclei-templates），
 支持 `--plugin-export` / `--plugin-manifest` / `--plugin-update` 三件套。
 
 ## 仓库目录结构
