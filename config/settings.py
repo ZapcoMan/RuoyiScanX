@@ -126,8 +126,15 @@ class WafBypass:
 
 # 工具版本与作者（同步 banner）
 VERSION = "1.4.3"
+# 二次开发版本
+DEVELOPERVERSION = "1.0.0"
 AUTHOR = "XIABAI"
+# 二次开发作者
+DEVELOPERAUTHOR = "ZapcoMan"
 GITHUB = "https://github.com/xiabai2008/Ruoyi-Scan"
+# 二次开发地址
+DEVELOP_GITHUB = "https://github.com/ZapcoMan/RuoyiScanX"
+
 CONTACT = "https://github.com/xiabai2008"
 
 # E5：插件模板仓库地址（--plugin-update 默认拉取源）

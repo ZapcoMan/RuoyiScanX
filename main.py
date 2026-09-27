@@ -23,10 +23,14 @@ def print_banner():
                           |___/
 
 ---Ruoyi-Scan&Version:{settings.VERSION}{YELLOW}
+[*] RuoyiScanX&Version:{settings.DEVELOPERVERSION}{YELLOW}
 [*]By.{settings.AUTHOR}
 [*]一款用于针对Ruoyi系统框架的综合漏洞扫描工具
-[*]Github:{settings.GITHUB}
-[*]联系方式:{settings.CONTACT}{RESET}""")
+[*]原始项目地址Github:{settings.GITHUB}
+[*]二次开发地址Github:{settings.DEVELOP_GITHUB}
+[*]By.{settings.DEVELOPERAUTHOR}""")
+
+
 
 
 def build_parser():
