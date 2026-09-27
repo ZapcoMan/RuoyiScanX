@@ -1,6 +1,6 @@
 # DevSecOps 集成指南（E6）
 
-Ruoyi-Scan 提供三层 CI/CD 集成能力：
+RuoyiScanX 提供三层 CI/CD 集成能力：
 1. **CI 模式**（`--ci`）：按严重度阈值决定退出码（0=通过 / 1=发现漏洞 / 2=错误）
 2. **SARIF 2.1.0 输出**（`--report-format sarif`）：对接 GitHub Code Scanning
 3. **模板生成**（`--ci-init github|gitlab|jenkins`）：一键生成流水线配置
@@ -43,7 +43,7 @@ python main.py --ci-init jenkins
 
 本 workflow 与 CodeQL（静态分析）互不冲突：
 - CodeQL：分析仓库**源代码**漏洞（SAST）
-- Ruoyi-Scan：检测**运行中的目标**漏洞（DAST，外部授权目标）
+- RuoyiScanX：检测**运行中的目标**漏洞（DAST，外部授权目标）
 - 两者结果在 GitHub Security 标签页并列展示
 
 ## 最佳实践

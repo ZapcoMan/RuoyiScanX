@@ -1,13 +1,13 @@
 # 贡献指南
 
-感谢你对 Ruoyi-Scan 的关注！本文档介绍如何参与项目开发。
+感谢你对 RuoyiScanX 的关注！本文档介绍如何参与项目开发。
 
 ## 快速开始
 
 ```bash
 # 1. Fork & Clone
-git clone https://github.com/<你的用户名>/Ruoyi-Scan.git
-cd Ruoyi-Scan
+git clone https://github.com/ZapcoMan/RuoyiScanX.git
+cd RuoyiScanX
 
 # 2. 安装开发依赖
 pip install -r requirements-dev.txt
@@ -119,7 +119,7 @@ class TestYourPlugin(unittest.TestCase):
 ## 项目结构
 
 ```
-Ruoyi-Scan/
+RuoyiScanX/
 ├── main.py              # CLI 入口（参数解析）
 ├── core/                # 核心引擎（runner / session / report / models）
 ├── lib/                 # 功能库（WAF 绕过 / 认证 / 逻辑扫描 / 异步引擎...）
