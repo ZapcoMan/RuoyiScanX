@@ -1,0 +1,92 @@
+# IDE / 工具缓存
+.idea/
+.workbuddy/
+.reasonix/
+
+# Python 字节码与缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 运行时数据库（扫描缓存 + 任务持久化，按需生成）
+data/*.db
+# 保留 data 目录但排除 db 文件（用 .gitkeep 占位）
+!data/.gitkeep
+
+# 构建产物
+build/
+dist/
+*.whl
+
+# 开发文档与 AI 提示词（不纳入版本库）
+agents.md
+P0P1P2升级计划.md
+D10+-路线图.md
+E1-E9-生态与AI升级路线图.md
+F1-F9-生态飞轮与基建产品化路线图.md
+
+# 扫描报告输出（按需生成，不纳入版本库）
+reports/
+reports_p9_*/
+reports_phase6/
+
+# README 演示 GIF 制作中间产物（脚本与报告留本地，便于重新生成动图）
+demo_reports/
+
+# 本地虚拟环境
+venv/
+.venv/
+env/
+
+# 阶段九临时调试脚本与日志
+_p9_*.py
+_p9_*.log
+
+# 真实靶场源码（外部仓库，仅保留文档与复现脚本）
+lab/real-ruoyi/
+# 多版本靶场矩阵：官方源码浅克隆（各版本数 MB）、产物（日志/报告/矩阵）、独立 MySQL 数据目录均不入库
+lab/version_matrix/src/
+lab/version_matrix/out/
+lab/version_matrix/mysql_data/
+
+# Maven 二进制发行包（用户自行下载）
+lab/tools/
+lab/maven388.tar.gz
+
+# 靶场构建/扫描日志
+lab/build*.log
+lab/build2.log
+lab/scan-vuln*.log
+lab/safe-baseline.log
+lab/ruoyi-run.log
+lab/ruoyi-vuln*.log
+lab/run-ruoyi.bat
+
+# CI 本地验证产物（run_e2e.py 生成）
+.ci_tmp/
+lab_*.log
+.coverage
+生成日期*
+
+# 桌面端构建产物（引擎冻结产物与 Tauri 产物均不入库，由 CI 构建）
+desktop/engine/.venv-build/
+desktop/engine/build/
+desktop/engine/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+desktop/dist/
+desktop/node_modules/
+desktop/artifacts/
+
+# mkdocs 文档站构建产物（CI 构建，不入库）
+site/
+
+# 桌面端 puppeteer 验证脚本的截图产物（每次运行像素微抖，不入库）
+desktop/scripts/*.png
+
+# 测试运行产物（验收报告等）
+data/acceptance_report*.json
+
+# security-scan 插件的运行时状态（hook 状态/扫描历史/报告，机器相关，不入库）
+.mimosa/

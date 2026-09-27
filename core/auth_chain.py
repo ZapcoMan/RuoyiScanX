@@ -1,0 +1,355 @@
+# 若依登录链编排器（D1 阶段）
+#
+# 功能：实现 RuoYi v4(Session) / v5(JWT) 双链路登录，为需鉴权 POC 提供会话。
+#
+# 核心逻辑：
+#   1. detect_auth_mode()  探测鉴权模式（v4 Session / v5 JWT / 无鉴权）
+#   2. login()             按探测到的模式登录，成功后会话自动带凭证
+#       - v4 Session：POST /login 表单 → Cookie 自动复用（session.cookies 持久化）
+#       - v5 JWT：POST /login JSON → 提取 token → session.headers['Authorization']
+#   3. 验证码处理：先尝试无验证码登录，失败则探测验证码类型
+#       - 无验证码：直接登录
+#       - 验证码可绕过（旧版 4.2-）：空 code 绕过（D1 暂不支持，留 D3）
+#       - 验证码必校验：返回 captcha_required=True，调用方判 UNKNOWN（D3 接 OCR）
+#
+# 设计原则：
+#   - 不修改 SessionManager 的接口，登录成功后 session 自带凭证
+#   - 登录失败不抛异常，返回 (ok, reason)，调用方决定是否继续
+#   - 兼容签名靶场（无验证码）与真实若依（有验证码，D1 阶段判 UNKNOWN）
+import json as _json
+from contextlib import contextmanager
+from typing import Any, Iterator, Optional, Tuple
+
+from common.logger import get_logger
+from core.http import join_url
+
+logger = get_logger(__name__)
+
+# 鉴权模式
+AUTH_NONE = "none"  # 无鉴权（如 VulnPreviewController 直接暴露）
+AUTH_V4_SESSION = "v4"  # RuoYi v4 Session（Cookie）
+AUTH_V5_JWT = "v5"  # RuoYi v5 JWT（Authorization 头）
+
+# 登录结果
+LOGIN_OK = "ok"  # 登录成功
+LOGIN_FAIL = "fail"  # 登录失败（用户名/密码错误）
+LOGIN_CAPTCHA = "captcha"  # 需要验证码（D1 不处理，留 D3）
+LOGIN_ERROR = "error"  # 网络异常或响应异常
+
+
+@contextmanager
+def isolated_auth_session(
+    target: str,
+    username: str,
+    password: str,
+    timeout: Optional[float] = None,
+) -> Iterator[Tuple[Any, bool, str]]:
+    """在**独立会话**中登录，yield (session, ok, reason)；退出时关闭该会话。
+
+    为什么需要独立会话（2026-09-17 多版本矩阵实测后确立）
+    ----------------------------------------------------
+    扫描器让所有插件复用同一个 `SessionManager`。若插件直接在共享会话上登录，
+    认证状态会**一直保留给后续插件**，而其余插件的判定普遍以「未认证基线」为前提：
+      - 未认证时未知路径 → 302 → 登录页（200，约 4KB）；
+      - 已认证时未知路径 → v4.7.8 返回 404，但 v4.8.3（Spring Boot 4.0.3）返回 200。
+    于是 v4.8.3 上一次性多出 6 个误报（备份文件 65 个 / MinIO / RocketMQ /
+    Swagger / IDE 残留 / Plus 认证），属**跨插件状态污染**。
+
+    ⚠ 不能用「cookie 快照 + 还原」做隔离——已实测无效：Shiro 把认证状态存在
+    服务端 session（按 JSESSIONID 索引），把 cookie 还原成同一个 JSESSIONID 后，
+    服务端仍视其为已认证。唯一的正确做法是让需鉴权的插件自建会话。
+
+    用法：
+        with isolated_auth_session(target, user, pwd) as (sess, ok, reason):
+            if not ok:
+                return ScanResult(... STATUS_UNKNOWN ...)
+            resp = sess.get(join_url(target, "/monitor/job"))
+
+    Args:
+        target: 目标站点根 URL
+        username / password: 登录凭据
+        timeout: 请求超时（None 用 SessionManager 默认）
+    """
+    from core.session import SessionManager
+
+    own = SessionManager(timeout=int(timeout) if timeout is not None else None)
+    try:
+        chain = RuoYiAuthChain(target, own, username=username, password=password, timeout=timeout)
+        ok, reason = chain.login()
+        yield own, ok, reason
+    finally:
+        try:
+            own.close()
+        except Exception:  # pragma: no cover - 关闭失败不应影响扫描结论
+            logger.debug("关闭隔离会话失败", exc_info=True)
+
+
+class RuoYiAuthChain:
+    """若依登录链编排器
+
+    用法：
+        chain = RuoYiAuthChain(target, session, username='admin', password='admin123')
+        ok, reason = chain.login()
+        if ok:
+            # session 已带凭证，后续请求自动鉴权
+            resp = session.get(join_url(target, '/monitor/job/edit'))
+    """
+
+    def __init__(
+        self,
+        target: str,
+        session: Any,
+        username: str = "admin",
+        password: str = "admin123",
+        remember_me: bool = False,
+        timeout: Optional[float] = None,
+    ) -> None:
+        """初始化登录链（默认尝试 admin/admin123 弱口令）
+
+        Args:
+            target: 目标站点根 URL
+            session: SessionManager 实例，登录成功后自动携带凭证
+            remember_me: 是否勾选"记住我"（v4 表单 rememberMe 字段）
+            timeout: 请求超时秒数（None 使用 session 默认）
+        """
+        self.target = target
+        self.session = session
+        self.username = username
+        self.password = password
+        self.remember_me = remember_me
+        self.timeout = timeout
+        self.auth_mode: Optional[str] = None
+
+    def detect_auth_mode(self) -> str:
+        """探测鉴权模式：v4 Session / v5 JWT / 无鉴权
+
+        判定依据：
+        - GET /login 返回 HTML 登录页 → v4 Session（Shiro 表单登录）
+        - GET /login 返回 JSON（{code:401} 或重定向）→ v5 JWT（前后端分离）
+        - GET /login 404 或无响应 → 无鉴权
+        """
+        try:
+            resp = self.session.get(join_url(self.target, "/login"))
+        except Exception:
+            self.auth_mode = AUTH_NONE
+            return AUTH_NONE
+
+        http_code = int(resp.status_code) if hasattr(resp, "status_code") else 0
+        text = resp.text or ""
+        ct = (resp.headers.get("Content-Type", "") or "").lower()
+        text_lower = text.lower()
+
+        # 404 / 无响应 → 无鉴权
+        if http_code == 404:
+            self.auth_mode = AUTH_NONE
+            return AUTH_NONE
+
+        # JSON 响应优先判定（v5 JWT，前后端分离）
+        # 注意：必须先于 HTML 关键字判定，避免 JSON msg 含"登录"二字被误判
+        if "json" in ct:
+            self.auth_mode = AUTH_V5_JWT
+            return AUTH_V5_JWT
+        try:
+            _json.loads(text)
+            self.auth_mode = AUTH_V5_JWT
+            return AUTH_V5_JWT
+        except (ValueError, TypeError):
+            logger.debug("鉴权模式 JSON 响应解析失败", exc_info=True)
+
+        # HTML 响应（含登录表单/html 标签）→ v4 Session
+        # 严格判定：<html> 或 <form> 标签，避免 JSON msg 含"登录"误判
+        if "html" in ct or "<html" in text_lower or "<form" in text_lower:
+            self.auth_mode = AUTH_V4_SESSION
+            return AUTH_V4_SESSION
+
+        # 默认按 v4 Session 处理（最常见）
+        self.auth_mode = AUTH_V4_SESSION
+        return AUTH_V4_SESSION
+
+    def login(self, captcha_code: Optional[str] = None, max_attempts: int = 5) -> Tuple[bool, str]:
+        """按探测到的鉴权模式登录（验证码错误时自动重试）
+
+        为什么需要重试：RuoYi 4.x 登录必带验证码，而 OCR 不可能 100% 准确。
+        2026-09-17 在真实 4.7.8 实例上实测：ddddocr 单次识别并登录成功约 67%。
+        验证码错误时重新取一张新图再识别即可，因此重试是**有效**的；
+        加上重试后整体成功率约为 1-(1-p)^n——3 次约 96%（矩阵实测仍会偶发失败），
+        5 次约 99.6%。
+
+        只对「验证码错误」重试——账号密码错误、网络异常重试没有意义。
+
+        Args:
+            captcha_code: 验证码（D3）。None=自动探测+OCR；''=跳过验证码；非空=手动提供
+            max_attempts: 含首次在内的最大尝试次数（显式传入 captcha_code 时不重试）
+
+        Returns:
+            (ok: bool, reason: str)
+            ok=True, reason=LOGIN_OK：登录成功，session 已带凭证
+            ok=False, reason=LOGIN_CAPTCHA：需要验证码且多次 OCR 均失败
+            ok=False, reason=LOGIN_FAIL：用户名/密码错误
+            ok=False, reason=LOGIN_ERROR：网络异常
+        """
+        if self.auth_mode is None:
+            self.detect_auth_mode()
+
+        if self.auth_mode == AUTH_NONE:
+            # 无鉴权，直接返回成功
+            return True, LOGIN_OK
+
+        attempts = 1 if captcha_code else max(1, max_attempts)
+        last_reason = LOGIN_ERROR
+        for i in range(attempts):
+            ok, reason = self._login_once(captcha_code)
+            if ok:
+                return True, LOGIN_OK
+            last_reason = reason
+            # 仅验证码错误值得换图重试
+            if not reason.startswith(LOGIN_CAPTCHA):
+                break
+            logger.debug("第 %d/%d 次登录因验证码失败，换图重试", i + 1, attempts)
+        return False, last_reason
+
+    def _login_once(self, captcha_code: Optional[str] = None) -> Tuple[bool, str]:
+        """执行一次登录尝试（按 auth_mode 分发，不含重试）"""
+        if self.auth_mode == AUTH_V4_SESSION:
+            return self._login_v4_session(captcha_code)
+
+        if self.auth_mode == AUTH_V5_JWT:
+            return self._login_v5_jwt(captcha_code)
+
+        return False, LOGIN_ERROR
+
+    def _login_v4_session(self, captcha_code: Optional[str] = None) -> Tuple[bool, str]:
+        """RuoYi v4 Session 登录：POST /login 表单 → Cookie 自动复用
+
+        表单字段：username / password / rememberMe / validateCode
+        验证码处理（D3）：
+        - captcha_code=None：自动探测验证码接口，有则 OCR 识别
+        - captcha_code=''：跳过验证码（用于无验证码环境）
+        - captcha_code='8'：直接用提供的验证码
+        """
+        # D3：验证码处理
+        validate_code = ""
+        if captcha_code is None:
+            try:
+                from core.captcha_solver import CaptchaSolver
+
+                solver = CaptchaSolver(self.target, self.session)
+                has_captcha, code = solver.solve()
+                if has_captcha:
+                    if code:
+                        validate_code = code
+                    else:
+                        # 有接口但 OCR 失败（图片为空或后端不可用）
+                        return False, f"{LOGIN_CAPTCHA}: 接口存在但识别失败(后端={solver.backend_name})"
+            except Exception as e:
+                return False, f"{LOGIN_CAPTCHA}: 探测异常 {e}"
+        elif captcha_code:
+            validate_code = captcha_code
+
+        url = join_url(self.target, "/login")
+        data = {
+            "username": self.username,
+            "password": self.password,
+            "rememberMe": "true" if self.remember_me else "false",
+            "validateCode": validate_code,
+        }
+        try:
+            resp = self.session.post(url, data=data)
+        except Exception as e:
+            return False, f"{LOGIN_ERROR}: {e}"
+
+        http_code = int(resp.status_code) if hasattr(resp, "status_code") else 0
+
+        # 解析 JSON 响应（RuoYi AjaxResult）
+        body = {}
+        try:
+            body = resp.json()
+        except (ValueError, TypeError):
+            logger.debug("登录响应 JSON 解析失败", exc_info=True)
+
+        # code=0 或 code=200 → 登录成功（若依 success() 返回 code=0，部分版本 200）
+        r_code = body.get("code")
+        if r_code in (0, 200):
+            return True, LOGIN_OK
+
+        # 验证码错误 → 需要验证码（D1 不处理，留 D3 OCR）
+        msg = str(body.get("msg", ""))
+        if "验证码" in msg or "captcha" in msg.lower():
+            return False, LOGIN_CAPTCHA
+
+        # 用户名/密码错误
+        if "用户" in msg or "密码" in msg or "password" in msg.lower() or "user" in msg.lower():
+            return False, f"{LOGIN_FAIL}: {msg}"
+
+        # 其他失败（code=500 等）
+        if r_code is not None and r_code != 0 and r_code != 200:
+            return False, f"{LOGIN_FAIL}: code={r_code} msg={msg}"
+
+        # 非 JSON 响应但 HTTP 200（可能是重定向到首页，登录成功）
+        if http_code == 200 and not body:
+            # 检查是否有 Set-Cookie（登录成功会下发新 JSESSIONID）
+            set_cookie = resp.headers.get("Set-Cookie", "") or ""
+            # Shiro 认证失败会下发 deleteMe cookie 销毁会话，出现它说明登录并未成功
+            if "JSESSIONID" in set_cookie and "deleteMe" not in set_cookie:
+                return True, LOGIN_OK
+
+        return False, f"{LOGIN_FAIL}: 未知响应 code={r_code} msg={msg}"
+
+    def _login_v5_jwt(self, captcha_code: Optional[str] = None) -> Tuple[bool, str]:
+        """RuoYi v5 JWT 登录：POST /login JSON → 提取 token → 加 Authorization 头
+
+        请求体：{"username":"admin","password":"admin123","code":"验证码","uuid":"uuid"}
+        响应体：{"code":200,"token":"eyJhbGciOi..."}
+        验证码处理（D3）：同 v4，captcha_code=None 自动探测+OCR
+        """
+        # D3：验证码处理（v5 用 code 字段，uuid 关联验证码 session）
+        validate_code = ""
+        captcha_uuid = ""
+        if captcha_code is None:
+            try:
+                from core.captcha_solver import CaptchaSolver
+
+                solver = CaptchaSolver(self.target, self.session)
+                has_captcha, code = solver.solve()
+                if has_captcha:
+                    if code:
+                        validate_code = code
+                    else:
+                        return False, f"{LOGIN_CAPTCHA}: 接口存在但识别失败(后端={solver.backend_name})"
+            except Exception as e:
+                return False, f"{LOGIN_CAPTCHA}: 探测异常 {e}"
+        elif captcha_code:
+            validate_code = captcha_code
+
+        url = join_url(self.target, "/login")
+        json_data = {
+            "username": self.username,
+            "password": self.password,
+            "code": validate_code,
+            "uuid": captcha_uuid,
+        }
+        try:
+            resp = self.session.post(url, json=json_data)
+        except Exception as e:
+            return False, f"{LOGIN_ERROR}: {e}"
+
+        body = {}
+        try:
+            body = resp.json()
+        except (ValueError, TypeError):
+            return False, f"{LOGIN_ERROR}: 响应非 JSON"
+
+        r_code = body.get("code")
+        if r_code == 200:
+            token = body.get("token") or ""
+            if token:
+                # 设置 Authorization 头，后续请求自动带
+                self.session.session.headers["Authorization"] = f"Bearer {token}"
+                return True, LOGIN_OK
+            return False, f"{LOGIN_FAIL}: 响应无 token 字段"
+
+        msg = str(body.get("msg", ""))
+        if "验证码" in msg or "captcha" in msg.lower():
+            return False, LOGIN_CAPTCHA
+
+        return False, f"{LOGIN_FAIL}: code={r_code} msg={msg}"
