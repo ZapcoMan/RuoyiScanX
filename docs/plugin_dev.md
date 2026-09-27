@@ -1,6 +1,6 @@
-# Ruoyi-Scan 插件开发教程
+# RuoyiScanX 插件开发教程
 
-本教程面向二次开发者，详细说明 Ruoyi-Scan 漏洞扫描器的插件系统架构、注册机制、CVSS/合规映射、WAF 绕过扩展与完整开发流程。所有代码示例均可在当前仓库直接运行。
+本教程面向二次开发者，详细说明 RuoyiScanX 漏洞扫描器的插件系统架构、注册机制、CVSS/合规映射、WAF 绕过扩展与完整开发流程。所有代码示例均可在当前仓库直接运行。
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## 插件架构概览
 
-Ruoyi-Scan 采用「每漏洞一插件」的设计：每个漏洞 POC 是一个独立的 `PluginBase` 子类，引擎按指纹路由到对应插件包并依次调用 `verify()`，结果汇总为 `ScanResult` 列表。
+RuoyiScanX 采用「每漏洞一插件」的设计：每个漏洞 POC 是一个独立的 `PluginBase` 子类，引擎按指纹路由到对应插件包并依次调用 `verify()`，结果汇总为 `ScanResult` 列表。
 
 ### PluginBase 抽象基类
 
@@ -481,7 +481,7 @@ if match_spring_actuator_env(resp.text):
 
 ## 插件注册方式
 
-Ruoyi-Scan 支持三种插件注册方式，按推荐度排序：
+RuoyiScanX 支持三种插件注册方式，按推荐度排序：
 
 ### 方式 1：内置插件（`plugin_list`）
 
@@ -637,7 +637,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ruoyi-scan-extra"
 version = "0.1.0"
-description = "Ruoyi-Scan 第三方插件扩展包"
+description = "RuoyiScanX 第三方插件扩展包"
 requires-python = ">=3.8"
 dependencies = [
     "ruoyi-scan>=1.1.0",  # 依赖主程序
@@ -736,7 +736,7 @@ entry-point 的 value 可以是：
 
 ## WAF 绕过插件开发
 
-WAF 绕过是 Ruoyi-Scan 的 D7 阶段能力。当引擎检测到 WAF 命中且原 `verify()` 结果非 CONFIRMED 时，会自动调用支持绕过的插件的 `verify_with_bypass()`。
+WAF 绕过是 RuoyiScanX 的 D7 阶段能力。当引擎检测到 WAF 命中且原 `verify()` 结果非 CONFIRMED 时，会自动调用支持绕过的插件的 `verify_with_bypass()`。
 
 ### 1. 启用 WAF 绕过支持
 

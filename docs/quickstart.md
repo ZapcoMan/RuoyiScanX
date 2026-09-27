@@ -13,8 +13,8 @@
 === "源码"
 
     ```bash
-    git clone https://github.com/xiabai2008/Ruoyi-Scan.git
-    cd Ruoyi-Scan
+    git clone https://github.com/ZapcoMan/RuoyiScanX.git
+    cd RuoyiScanX
     pip install -r requirements.txt
     python main.py -h
     ```
@@ -75,7 +75,7 @@ ruoyi-scan -u http://target:8080 --report ./out --report-format html,pdf,docx
 - **UNKNOWN**：网络异常 / WAF 拦截 / 验证码阻断等原因导致无法判定，**永不冒充 SAFE**，
   建议人工复核
 
-> 这条纪律是 Ruoyi-Scan 与「结果全红」扫描器的核心差异：报告里的每一行结论都可信。
+> 这条纪律是 RuoyiScanX 与「结果全红」扫描器的核心差异：报告里的每一行结论都可信。
 > 判定细节与误报防护矩阵见[安全报告说明](security_report.md)。
 
 ## 4. 报告在哪

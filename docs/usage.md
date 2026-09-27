@@ -1,8 +1,8 @@
-# Ruoyi-Scan 用户指南
+# RuoyiScanX 用户指南
 
 > 版本：1.4.3 ｜ 作者：XIABAI ｜ 适用对象：安全工程师 / 渗透测试人员 / DevSecOps 工程师
 >
-> 本指南详细说明 Ruoyi-Scan 的安装、各扫描模式、配置、模板、WAF 绕过、利用链、报告输出、Web API、认证扫描、分布式扫描、CI/CD 集成与缓存性能优化等内容。所有示例命令均可直接复制运行。
+> 本指南详细说明 RuoyiScanX 的安装、各扫描模式、配置、模板、WAF 绕过、利用链、报告输出、Web API、认证扫描、分布式扫描、CI/CD 集成与缓存性能优化等内容。所有示例命令均可直接复制运行。
 
 ---
 
@@ -34,7 +34,7 @@
 
 ## 安装方式
 
-Ruoyi-Scan 采用 PEP 621 元数据规范，提供源码安装与 Docker 安装两种方式。**核心依赖仅 `requests` 与 `requests-mock`，零系统级依赖**，其余能力通过可选依赖组按需启用。
+RuoyiScanX 采用 PEP 621 元数据规范，提供源码安装与 Docker 安装两种方式。**核心依赖仅 `requests` 与 `requests-mock`，零系统级依赖**，其余能力通过可选依赖组按需启用。
 
 ### 源码安装
 
@@ -42,8 +42,8 @@ Ruoyi-Scan 采用 PEP 621 元数据规范，提供源码安装与 Docker 安装�
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/xiabai2008/Ruoyi-Scan.git
-cd Ruoyi-Scan
+git clone https://github.com/ZapcoMan/RuoyiScanX.git
+cd RuoyiScanX
 
 # 2. 可编辑模式安装（修改源码即时生效）
 pip install -e .
@@ -177,7 +177,7 @@ docker compose down
 
 ## 扫描模式详解
 
-Ruoyi-Scan 提供 6 种扫描模式，覆盖从单点验证到全量攻防演练的不同场景。
+RuoyiScanX 提供 6 种扫描模式，覆盖从单点验证到全量攻防演练的不同场景。
 
 ### -p 漏洞检测模式
 
@@ -372,8 +372,8 @@ ruoyi-scan -f targets.txt -p --ci --severity-threshold high
 **适用场景**：通过浏览器代理正常访问目标，扫描器自动捕获流量并扫描，无需主动发起请求。适合「人工浏览 + 自动扫描」组合，可绕过主动扫描的 WAF 检测。
 
 **工作原理**：
-1. Ruoyi-Scan 启动一个本地 HTTP/HTTPS 代理服务器
-2. 浏览器配置代理指向 Ruoyi-Scan
+1. RuoyiScanX 启动一个本地 HTTP/HTTPS 代理服务器
+2. 浏览器配置代理指向 RuoyiScanX
 3. 用户正常浏览目标站点
 4. 扫描器捕获所有 HTTP 流量，自动去重并执行 POC 检测
 
@@ -412,9 +412,9 @@ google-chrome --proxy-server="http://127.0.0.1:8080"
 **配合 BurpSuite 上游代理**：
 
 ```bash
-# Ruoyi-Scan 作为下游，BurpSuite 作为上游
+# RuoyiScanX 作为下游，BurpSuite 作为上游
 ruoyi-scan --passive --passive-port 8080 --proxy http://127.0.0.1:8888
-# 浏览器 → Ruoyi-Scan(8080) → BurpSuite(8888) → 目标
+# 浏览器 → RuoyiScanX(8080) → BurpSuite(8888) → 目标
 ```
 
 > 提示：被动模式不会主动发起任何请求到目标，仅分析浏览器实际访问的 URL，对目标零压力，是合规扫描的首选方式。
@@ -440,7 +440,7 @@ pip install pyyaml
 创建 `config.yaml`：
 
 ```yaml
-# Ruoyi-Scan 完整配置文件示例
+# RuoyiScanX 完整配置文件示例
 # 所有字段均可选，未配置的字段使用默认值
 
 # ── 扫描模式 ──
@@ -579,7 +579,7 @@ ruoyi-scan --config config.yaml -p http://other-target:8080/ --threads 20
 
 ## 扫描模板
 
-为简化不同场景下的参数组合，Ruoyi-Scan 内置 4 种扫描模板板，覆盖快速验证、深度渗透、合规检查、护网行动四类典型场景。
+为简化不同场景下的参数组合，RuoyiScanX 内置 4 种扫描模板板，覆盖快速验证、深度渗透、合规检查、护网行动四类典型场景。
 
 ### 四种模板说明
 
@@ -689,7 +689,7 @@ runner.run()
 
 ## WAF 绕过
 
-Ruoyi-Scan 内置 11 种 WAF 绕过策略，配合三态判定保护矩阵与成功率追踪，能在检测到 WAF 时自动调整请求特征，提升 POC 命中率。
+RuoyiScanX 内置 11 种 WAF 绕过策略，配合三态判定保护矩阵与成功率追踪，能在检测到 WAF 时自动调整请求特征，提升 POC 命中率。
 
 ### 三种模式
 
@@ -740,7 +740,7 @@ ruoyi-scan -p http://target:8080/ --bypass-waf off
 
 ### 成功率追踪
 
-Ruoyi-Scan 持续记录每种绕过策略的成功率，并在扫描结束后输出统计：
+RuoyiScanX 持续记录每种绕过策略的成功率，并在扫描结束后输出统计：
 
 ```
 WAF 绕过策略统计：
@@ -881,7 +881,7 @@ ruoyi_sql_to_rce 的 DAG 结构：
 
 ## 报告输出
 
-Ruoyi-Scan 支持 7 种报告格式，覆盖交付、归档、合规、机器处理等不同场景，并支持中英文切换与增量对比。
+RuoyiScanX 支持 7 种报告格式，覆盖交付、归档、合规、机器处理等不同场景，并支持中英文切换与增量对比。
 
 ### 7 种格式说明
 
@@ -1142,7 +1142,7 @@ asyncio.run(listen())
 
 ## 认证扫描
 
-针对需要登录才能访问的目标，Ruoyi-Scan 提供 4 种认证注入方式，将认证信息自动附加到所有扫描请求中。
+针对需要登录才能访问的目标，RuoyiScanX 提供 4 种认证注入方式，将认证信息自动附加到所有扫描请求中。
 
 ### --auth cookie/token/bearer
 
@@ -1231,7 +1231,7 @@ ruoyi-scan -p http://target:8080/ --auth-login "admin:admin123" \
 
 ## 分布式扫描
 
-针对万级以上的大规模批量扫描场景，Ruoyi-Scan 提供 Redis Master-Worker 分布式架构，支持多机协作扫描与全局限速。
+针对万级以上的大规模批量扫描场景，RuoyiScanX 提供 Redis Master-Worker 分布式架构，支持多机协作扫描与全局限速。
 
 ### 启用前提
 
@@ -1402,7 +1402,7 @@ ruoyi-scan --distributed master --redis-url redis://unavailable:6379/0
 
 ## CI/CD 集成
 
-Ruoyi-Scan 提供原生 CI/CD 集成能力，支持根据漏洞严重度自动决定流水线成败，并一键生成主流 CI 平台的配置文件。
+RuoyiScanX 提供原生 CI/CD 集成能力，支持根据漏洞严重度自动决定流水线成败，并一键生成主流 CI 平台的配置文件。
 
 ### --ci 模式 + 严重度阈值
 
@@ -1465,7 +1465,7 @@ ruoyi-scan --ci-init jenkins
 
 ```yaml
 # .github/workflows/ruoyi-scan.yml
-name: Ruoyi-Scan Security Check
+name: RuoyiScanX Security Check
 
 on:
   push:
@@ -1488,10 +1488,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ruoyi-Scan
+      - name: Install RuoyiScanX
         run: |
-          git clone https://github.com/xiabai2008/Ruoyi-Scan.git
-          cd Ruoyi-Scan
+          git clone https://github.com/ZapcoMan/RuoyiScanX.git
+          cd RuoyiScanX
           pip install -e ".[report]"  # 含 PDF/Word/Excel 报告
 
       - name: Run Security Scan
@@ -1531,8 +1531,8 @@ ruoyi-scan:
   stage: security
   image: python:3.11
   script:
-    - git clone https://github.com/xiabai2008/Ruoyi-Scan.git
-    - cd Ruoyi-Scan && pip install -e .
+    - git clone https://github.com/ZapcoMan/RuoyiScanX.git
+    - cd RuoyiScanX && pip install -e .
     - ruoyi-scan -p "$TARGET_URL" --ci --severity-threshold high --template quick
   artifacts:
     when: always
@@ -1553,7 +1553,7 @@ pipeline {
     stages {
         stage('Security Scan') {
             steps {
-                sh 'git clone https://github.com/xiabai2008/Ruoyi-Scan.git && cd Ruoyi-Scan && pip install -e .'
+                sh 'git clone https://github.com/ZapcoMan/RuoyiScanX.git && cd RuoyiScanX && pip install -e .'
                 sh '''
                     ruoyi-scan -p ${TARGET_URL} \
                       --ci \
@@ -1577,7 +1577,7 @@ pipeline {
 
 ## 缓存与性能优化
 
-Ruoyi-Scan 提供多层性能优化机制，包括 SQLite 结果缓存、并发线程池、令牌桶限速与异步引擎，可针对不同规模目标灵活调优。
+RuoyiScanX 提供多层性能优化机制，包括 SQLite 结果缓存、并发线程池、令牌桶限速与异步引擎，可针对不同规模目标灵活调优。
 
 ### --cache SQLite 缓存
 
@@ -1793,8 +1793,9 @@ A：使用 `--template quick` 减少扫描范围，或增大 CI 任务超时时�
 
 ### 技术支持
 
-- 仓库：https://github.com/xiabai2008/Ruoyi-Scan
-- 问题反馈：https://github.com/xiabai2008/Ruoyi-Scan/issues
+- 本仓库：https://github.com/ZapcoMan/RuoyiScanX
+- 原项目：https://github.com/xiabai2008/Ruoyi-Scan（致敬 XIABAI）
+- 问题反馈：https://github.com/ZapcoMan/RuoyiScanX/issues
 - 许可：MIT License © 2026 XIABAI
 
 ---
