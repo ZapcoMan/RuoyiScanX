@@ -1,4 +1,4 @@
-# Ruoyi-Scan 依赖清单
+# RuoyiScanX 依赖清单
 # 完整可选项请参考 pyproject.toml [project.optional-dependencies]
 #
 # 安装方式：
