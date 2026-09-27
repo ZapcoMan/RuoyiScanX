@@ -9,8 +9,8 @@ site_name: RuoyiScanX
 site_description: 若依（RuoYi）专项漏洞扫描器 —— 插件化 / 三态判定 / 合规交付
 site_author: XIABAI
 site_url: https://xiabai2008.github.io/ruoyi-scan/
-repo_name: xiabai2008/RuoyiScanX
-repo_url: https://github.com/xiabai2008/RuoyiScanX
+repo_name: xiabai2008/Ruoyi-Scan
+repo_url: https://github.com/xiabai2008/Ruoyi-Scan
 edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2024-2026 XIABAI · MIT License
@@ -59,7 +59,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/xiabai2008/RuoyiScanX
+      link: https://github.com/xiabai2008/Ruoyi-Scan
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/ruoyi-scan/
   generator: false

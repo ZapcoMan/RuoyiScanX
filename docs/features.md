@@ -1,6 +1,6 @@
 # 核心能力总览
 
-> 本文档系统性地梳理 Ruoyi-Scan 的全部功能模块。CLI 参数速查请见 [CLI 参考](cli-reference.md)，
+> 本文档系统性地梳理 RuoyiScanX 的全部功能模块。CLI 参数速查请见 [CLI 参考](cli-reference.md)，
 > 二次开发指南请见 [SECONDARY_DEV.md](SECONDARY_DEV.md)。
 
 ---

@@ -1,4 +1,4 @@
-# Ruoyi-Scan 一键部署（阶段七 + D16 监控栈）
+# RuoyiScanX 一键部署（阶段七 + D16 监控栈）
 # 包含：
 #   - scanner：扫描器 CLI（main.py 入口，参数通过 CMD 追加）
 #   - api：Web API 服务（FastAPI + WebSocket + Web 控制台）

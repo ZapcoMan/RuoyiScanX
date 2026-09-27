@@ -1,8 +1,8 @@
-// Ruoyi-Scan 桌面端 —— Rust 宿主（单 exe 架构）
+// RuoyiScanX 桌面端 —— Rust 宿主（单 exe 架构）
 //
-// 发布形态：一个 Ruoyi-Scan.exe 双击即用，无需安装器、无需 Python。
+// 发布形态：一个 RuoyiScanX.exe 双击即用，无需安装器、无需 Python。
 //   - PyInstaller 冻结的 FastAPI 引擎在编译期嵌入壳二进制（build.rs → OUT_DIR/embedded_engine.bin）
-//   - 首次运行自解压到 %LOCALAPPDATA%\Ruoyi-Scan\engine\（版本戳不匹配时覆盖更新）
+//   - 首次运行自解压到 %LOCALAPPDATA%\RuoyiScanX\engine\（版本戳不匹配时覆盖更新）
 //   - 拉起引擎（127.0.0.1:8123）→ 退出时回收（正常退出走 Exit 事件；被强杀走 JobObject）
 //
 // 开发回退：引擎未嵌入（0 字节）时回退 python main.py --serve（仓库根，M1 开发体验）。
@@ -39,11 +39,11 @@ fn port_open(port: u16) -> bool {
     TcpStream::connect_timeout(&addr, Duration::from_millis(300)).is_ok()
 }
 
-/// 引擎自解压目录：%LOCALAPPDATA%\Ruoyi-Scan\engine\
+/// 引擎自解压目录：%LOCALAPPDATA%\RuoyiScanX\engine\
 #[cfg(windows)]
 fn engine_dir() -> PathBuf {
     std::env::var("LOCALAPPDATA")
-        .map(|d| PathBuf::from(d).join("Ruoyi-Scan").join("engine"))
+        .map(|d| PathBuf::from(d).join("RuoyiScanX").join("engine"))
         .unwrap_or_else(|_| PathBuf::from("engine"))
 }
 
